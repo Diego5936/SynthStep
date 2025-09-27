@@ -1,26 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useToneEngine } from './hooks/useToneEngine'
 
 import Camera from './components/Camera'
 import SoundButton from './components/SoundButton'
 
 import './App.css'
-import { yToVolume, yToPitchHz } from './vision/wristMappings'
 
 function App() {
-  const { playCymbal, playDrum, playHihatOpen, 
-          playHihatQuick, playSnare, playTambor } = useToneEngine();
-  const [cameraOn, setCameraOn] = useState(false);
   const engine = useToneEngine();
+  const { 
+    startAudio,
+    playCymbal, playDrum, playHihatOpen, playHihatQuick, playSnare, 
+    detectDrumHit, 
+  } = engine;
 
-  async function startAudio() {
-    await Tone.start();
-    console.log('Audio is ready');
-  }
+  const [cameraOn, setCameraOn] = useState(false);
+
+  const [lastYL, setLastYL] = useState(null);
+  const [lastYR, setLastYR] = useState(null);
   
   return (
     <div className="App">
       <h1>SynthStep</h1>
+
+      {/* Required by browsers to unlock audio */}
+      <button onClick={startAudio}>Start Audio</button>
 
       {/* Sound Test */}
       <div>
@@ -29,7 +33,6 @@ function App() {
         <SoundButton label="Hihat Open" onClick={playHihatOpen} />
         <SoundButton label="Hihat Quick" onClick={playHihatQuick} />
         <SoundButton label="Snare" onClick={playSnare} />
-        <SoundButton label="Tambor" onClick={playTambor} />
       </div>
 
       {/* Camera */}
@@ -37,7 +40,21 @@ function App() {
         {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
       </button>
 
-      {cameraOn && <Camera />}
+      <p style={{fontFamily:"monospace"}}>
+        audioStarted: {String(engine.audioStarted)} | drumsLoaded: {String(engine.drumsLoaded)}<br/>
+        yL: {lastYL?.toFixed?.(3) ?? "-"} | yR: {lastYR?.toFixed?.(3) ?? "-"}
+      </p>
+
+      {cameraOn && (
+        <Camera 
+          onPose={({ yL, yR }) => {
+            console.log(`[pose->App] yL=${yL?.toFixed?.(3)} yR=${yR?.toFixed?.(3)}`);
+            setLastYL(yL); 
+            setLastYR(yR);
+            detectDrumHit({ yL, yR });
+          }}
+        />
+      )}
     </div>
   );
 }

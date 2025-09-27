@@ -12,7 +12,7 @@ export default function Camera({ width = "80%", onPose }) {
         let isActive = true;
 
         // Start the camera
-        navigator.mediaDevices.getUserMedia({ video: true }).then((mediaStream) => {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(async (mediaStream) => {
             if (!isActive) { 
                 mediaStream.getTracks().forEach((track) => track.stop());
                 return;
@@ -22,6 +22,16 @@ export default function Camera({ width = "80%", onPose }) {
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
                 console.log("Camera started");
+
+                await new Promise((resolve) => {
+                    const v = videoRef.current;
+                    if (!v) return resolve();
+                    if (v.readyState >= 2 && v.videoHeight > 0) return resolve();
+                    v.onloadedmetadata = () => resolve();
+                });
+
+                await videoRef.current.play();
+                console.log("[camera] video size:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);                
             }
         })
         .catch((err) => console.error("Error opening camera:", err));
@@ -33,24 +43,45 @@ export default function Camera({ width = "80%", onPose }) {
 
             // Pose loop
             const loop = async () => {
+                // guard: detector & video exist
                 if (!videoRef.current || !detectorRef.current) {
                     rafRef.current = requestAnimationFrame(loop);
                     return;
                 }
 
-                const poses = await detectorRef.current.estimatePoses(videoRef.current);
-                if (poses?.[0]) {
-                    console.log("Pose keypoints:", poses[0].keypoints.map(k => k.name || k.part));
-                    const h = videoRef.current.videoHeight || videoRef.current.clientHeight || 1;
+                const v = videoRef.current;
+
+                // guard: video has real dimensions (prevents 0x0 texture error)
+                if (!v.videoWidth || !v.videoHeight) {
+                    rafRef.current = requestAnimationFrame(loop);
+                    return;
+                }
+
+                try {
+                    const poses = await detectorRef.current.estimatePoses(v);
+                    if (poses?.[0]) {
+                    const kp = poses[0].keypoints;
+                    // raw wrists from MoveNet indices
+                    const lw = kp[9];
+                    const rw = kp[10];
+                    console.log("[raw wrists]", { lw, rw, h: v.videoHeight });
+
+                    const h = v.videoHeight || 1;
                     const wrists = mapWristY(poses[0], h);
                     if (wrists && onPose) {
-                        console.log("Detected wrists:", wrists);
+                        console.log("[pose] wrists:", wrists);
                         onPose(wrists);
+                    } else {
+                        console.warn("[pose] wrists null this frame");
                     }
+                    }
+                } catch (err) {
+                    console.error("[pose] estimatePoses error:", err);
                 }
+
                 rafRef.current = requestAnimationFrame(loop);
-            };
-            rafRef.current = requestAnimationFrame(loop);
+                };
+                rafRef.current = requestAnimationFrame(loop);
         })();
 
         // Stop the camera
