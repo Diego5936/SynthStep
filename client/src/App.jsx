@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useToneEngine } from './hooks/useToneEngine'
 
-import SoundButton from './components/SoundButton'
-import SoundControl from './components/SoundControl'
 import Camera from './components/Camera'
 
 import './App.css'
