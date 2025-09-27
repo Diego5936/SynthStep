@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import * as Tone from "tone";
-
 import './App.css'
 
 import SoundButton from './components/SoundButton'
 import SoundControl from './components/SoundControl'
+import Camera from './components/Camera'
 
 
 function App() {
   const [settings, setSettings] = useState({ note: "C4", duration: "8n" });
+  const [cameraOn, setCameraOn] = useState(false);
   
   return (
     <div>
@@ -21,6 +21,13 @@ function App() {
         <SoundButton label="FM" instrument="fm" {...settings}/>
         <SoundButton label="Noise" instrument="noise" {...settings}/>
       </div>
+
+      {/* Camera */}
+      <button onClick={() => setCameraOn((prev) => !prev)}>
+        {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
+      </button>
+
+      {cameraOn && <Camera />}
     </div>
   );
 }
