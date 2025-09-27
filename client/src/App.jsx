@@ -1,19 +1,28 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import * as Tone from "tone";
+
 import './App.css'
-import SynthTest from './components/SynthTest'
+
+import SoundButton from './components/SoundButton'
+import SoundControl from './components/SoundControl'
+
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  const [settings, setSettings] = useState({ note: "C4", duration: "8n" });
+  
   return (
-    <>
+    <div>
       <h1>SynthStep</h1>
+      <SoundControl onChange={setSettings} />
 
-      <SynthTest />
-    </>
-  )
+      <div>
+        <SoundButton label="Drum" instrument="drum" {...settings}/>
+        <SoundButton label="Synth" instrument="synth" {...settings}/>
+        <SoundButton label="FM" instrument="fm" {...settings}/>
+        <SoundButton label="Noise" instrument="noise" {...settings}/>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
