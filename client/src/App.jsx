@@ -2,59 +2,42 @@ import { useEffect, useState } from 'react'
 import { useToneEngine } from './hooks/useToneEngine'
 
 import Camera from './components/Camera'
+import SoundButton from './components/SoundButton'
 
 import './App.css'
 import { yToVolume, yToPitchHz } from './vision/wristMappings'
 
 function App() {
+  const { playCymbal, playDrum, playHihatOpen, 
+          playHihatQuick, playSnare, playTambor } = useToneEngine();
   const [cameraOn, setCameraOn] = useState(false);
-  const [vol, setVol] = useState(0.5);
-  const [pitch, setPitch] = useState(440);
   const engine = useToneEngine();
 
-  useEffect(() => {
-    let running = true;
-    (async () => {
-      if (cameraOn) {
-        await engine.start(440);
-      }
-      else {
-        engine.stop();
-      }
-    })();
-
-    return () => {
-      running = false;
-    };
-  }, [cameraOn]);
+  async function startAudio() {
+    await Tone.start();
+    console.log('Audio is ready');
+  }
   
   return (
-    <div>
+    <div className="App">
       <h1>SynthStep</h1>
+
+      {/* Sound Test */}
+      <div>
+        <SoundButton label="Cymbal" onClick={playCymbal} />
+        <SoundButton label="Drum" onClick={playDrum} />
+        <SoundButton label="Hihat Open" onClick={playHihatOpen} />
+        <SoundButton label="Hihat Quick" onClick={playHihatQuick} />
+        <SoundButton label="Snare" onClick={playSnare} />
+        <SoundButton label="Tambor" onClick={playTambor} />
+      </div>
 
       {/* Camera */}
       <button onClick={() => setCameraOn((prev) => !prev)}>
         {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
       </button>
 
-      {cameraOn && (
-        <Camera 
-          onPose={({ yL, yR }) => {
-            console.log("Pose:", yL, yR);
-            const v = yToVolume(yL);
-            const p = yToPitchHz(yR);
-            setVol(v.toFixed(2));
-            setPitch(Math.round(p));
-
-            // Left wrist - volume
-            engine.setVolume( v );
-            // Right wrist - pitch
-            engine.setPitch( p );
-          }}
-        />
-      )}
-
-      <p>Volume: {vol} | Pitch: {pitch} Hz</p>
+      {cameraOn && <Camera />}
     </div>
   );
 }
