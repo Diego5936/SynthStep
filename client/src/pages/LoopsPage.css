@@ -388,30 +388,69 @@ input[type="range"]::-moz-range-thumb:hover {
 
 
 
-/* Tracks */
+
+/* Tracks container */
 .tracks {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%; /* full width */
 }
+
 .track {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
+  justify-content: space-between; /* push delete button to far right */
+  gap: 12px;
+  padding: 0; /* tighter so color fills the row */
   border-radius: 10px;
-  padding: 10px;
+  background: none; /* let the clip color take over */
+  width: 100%;
 }
+
+.clip-placeholder {
+  flex: 1;
+  padding: 18px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Wide colored lanes */
+.track:nth-child(1) .clip-placeholder {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+.track:nth-child(2) .clip-placeholder {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+}
+.track:nth-child(3) .clip-placeholder {
+  background: linear-gradient(135deg, #10b981, #34d399);
+}
+.track:nth-child(4) .clip-placeholder {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+/* Delete button pinned at right */
 .track button {
-  border: none;
-  background: rgba(255,80,80,0.2);
-  color: #ffaaaa;
-  border-radius: 6px;
-  padding: 4px 8px;
+  margin-right: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 10px;
   cursor: pointer;
 }
+.track button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+
 
 /* Mute buttons */
 .mute-btn {
@@ -429,3 +468,37 @@ input[type="range"]::-moz-range-thumb:hover {
   background: rgba(34,211,238,0.2);
 }
 
+/* === Countdown Overlay === */
+.countdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.9),
+               0 0 40px rgba(34, 211, 238, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+  animation: countdown-pop 0.8s ease-out;
+}
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}

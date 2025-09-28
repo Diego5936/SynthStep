@@ -14,10 +14,19 @@ export default function LoopsPage() {
   const [muteDrums, setMuteDrums] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
+  const [countdown, setCountdown] = useState(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  const [tracks, setTracks] = useState([]);
+  // Preload with fake demo tracks for presentation
+  const [tracks, setTracks] = useState([
+    { id: 1, name: "Kick Loop", url: null },
+    { id: 2, name: "Snare Groove", url: null },
+    { id: 3, name: "Bassline A", url: null },
+    { id: 4, name: "Synth Arp", url: null },
+  ]);
+
   const [bpm, setBpm] = useState(120);
   const [bars, setBars] = useState(4);
 
@@ -93,18 +102,13 @@ export default function LoopsPage() {
     if (activeInstr === null) return;
 
     if (!isPlaying) {
-      // if synth already exists, dispose first
-      if (synth) {
-        synth.dispose();
-      }
-
+      if (synth) synth.dispose();
       const newSynth = buildSynth(activeInstr);
       if (newSynth) {
-        // sustain note
         if (activeInstr === 3) {
           newSynth.triggerAttack(); // noise
         } else {
-          newSynth.triggerAttack("C4"); // pitched synths
+          newSynth.triggerAttack("C4");
         }
         setSynth(newSynth);
       }
@@ -128,45 +132,74 @@ export default function LoopsPage() {
     await Tone.start();
     Tone.Transport.stop();
     Tone.Transport.position = 0;
-
     if (synth) {
       synth.triggerRelease();
       synth.dispose();
       setSynth(null);
     }
-
     setIsPlaying(false);
     setIsPaused(false);
   };
 
-  // === Recording ===
+  // === Recording (start) ===
   const startRecording = async () => {
     console.log("⬤ Record clicked");
     await Tone.start();
     if (isRecording) return;
+
     stopTransport();
+    setCountdown(3);
 
-    alert("Recording starts in 3...2...1...");
+    let step = 3;
+    const timer = setInterval(() => {
+      step--;
+      if (step > 0) {
+        setCountdown(step);
+      } else {
+        clearInterval(timer);
+        setCountdown("GO!");
+        setTimeout(() => setCountdown(null), 800);
 
-    Tone.Transport.position = 0;
-    Tone.Transport.start();
+        Tone.Transport.cancel();
+        Tone.Transport.position = 0;
+        Tone.Transport.start();
 
-    setIsRecording(true);
-    recorder.current.start();
+        setIsRecording(true);
 
-    const durSec = (bars * 4 * 60) / bpm;
-    setTimeout(async () => {
-      const rec = await recorder.current.stop();
-      const url = URL.createObjectURL(rec);
-      const player = new Tone.Player(url).sync().start(0);
-      player.loop = true;
-      player.connect(Tone.Destination);
-
-      setTracks((t) => [...t, { id: Date.now(), player, url }]);
-      setIsRecording(false);
-    }, durSec * 1000);
+        recorder.current.start().then(() => {
+          console.log("[Recorder] STARTED");
+        });
+      }
+    }, 1000);
   };
 
+  // === Recording (stop, quantized to next bar) ===
+  const stopRecordingManual = () => {
+    if (!isRecording || !recorder.current) return;
+
+    const pos = Tone.Transport.position;
+    const [barsNow] = pos.split(":").map((n) => parseInt(n, 10) || 0);
+    const stopAtBar = barsNow + 1;
+
+    console.log("[Recorder] Scheduled STOP at", stopAtBar, "bars");
+
+    Tone.Transport.scheduleOnce(async () => {
+      if (recorder.current) {
+        console.log("[Recorder] STOP at", Tone.Transport.position);
+        const rec = await recorder.current.stop();
+        if (rec) {
+          const url = URL.createObjectURL(rec);
+          const player = new Tone.Player(url).sync().start(0);
+          player.loop = true;
+          player.connect(Tone.Destination);
+          setTracks((t) => [...t, { id: Date.now(), player, url }]);
+        }
+      }
+      setIsRecording(false);
+    }, `${stopAtBar}:0:0`);
+  };
+
+  // === Delete track ===
   const deleteTrack = (id) => {
     setTracks((t) => {
       const tr = t.find((tr) => tr.id === id);
@@ -178,8 +211,7 @@ export default function LoopsPage() {
   // === Slider Controls ===
   useEffect(() => {
     if (synth) {
-      // pitch = map 0–100 → MIDI note (say C2–C6)
-      const midi = 36 + Math.floor((sliders.pitch / 100) * 48); // 36 = C2
+      const midi = 36 + Math.floor((sliders.pitch / 100) * 48);
       const freq = Tone.Frequency(midi, "midi").toFrequency();
       if (synth.setNote) {
         synth.setNote(freq);
@@ -187,9 +219,8 @@ export default function LoopsPage() {
         synth.frequency.rampTo(freq, 0.05);
       }
 
-      // volume = map 0–100 → -60 dB to 0 dB
-      const vol = (sliders.volume / 100) * 0; // 0 is max
       if (synth.volume) {
+        const vol = (sliders.volume / 100) * -30; // map 0–100 → -30 to 0 dB
         synth.volume.rampTo(vol, 0.05);
       }
     }
@@ -197,9 +228,7 @@ export default function LoopsPage() {
 
   // === Muting ===
   useEffect(() => {
-    if (synth) {
-      synth.mute = muteSynth;
-    }
+    if (synth) synth.mute = muteSynth;
   }, [muteSynth, synth]);
 
   useEffect(() => {
@@ -302,6 +331,9 @@ export default function LoopsPage() {
             <button onClick={startRecording} className={isRecording ? "rec-on" : ""}>
               ⬤ Record
             </button>
+            <button onClick={stopRecordingManual} disabled={!isRecording}>
+              ⏹ Stop Rec
+            </button>
             <label>
               BPM
               <input
@@ -321,11 +353,22 @@ export default function LoopsPage() {
             </label>
           </div>
 
+          {/* Countdown Overlay */}
+          {countdown && (
+            <div className="countdown-overlay">
+              <span>{countdown}</span>
+            </div>
+          )}
+
           {/* Track List */}
           <div className="tracks">
             {tracks.map((tr) => (
               <div key={tr.id} className="track">
-                <audio src={tr.url} controls />
+                {tr.url ? (
+                  <audio src={tr.url} controls />
+                ) : (
+                  <div className="clip-placeholder">{tr.name}</div>
+                )}
                 <button onClick={() => deleteTrack(tr.id)}>🗑 Delete</button>
               </div>
             ))}
