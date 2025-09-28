@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import * as Tone from 'tone';
 
+// Pages
 import './App.css';
+import LoopsPage from './pages/LoopsPage.jsx';
 
-import LoopsPage from "./pages/LoopsPage.jsx";
+// Hooks
+import { useToneEngine } from './hooks/useToneEngine.js';
+
+// Components
 import SoundButton from './components/SoundButton';
-import SoundControl from './components/SoundControl';
 import Camera from './components/Camera';
 
 function SynthStep() {
