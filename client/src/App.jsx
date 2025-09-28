@@ -40,9 +40,15 @@ function SynthStep() {
 
       {!audioReady && (
         <p>
-          <button onClick={enableAudio}>Enable Audio</button>
+          <button onClick={() => {
+            startAudio();
+            setAudioReady(true);
+          }}>
+            Enable Audio
+          </button>
         </p>
       )}
+
 
       <SynthKeyboard instrument={instrument} />
 
