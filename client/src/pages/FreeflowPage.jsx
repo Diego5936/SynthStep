@@ -1,8 +1,18 @@
 import React, { useState } from "react";
 import Camera from "../components/Camera";
+import * as Tone from "tone";
+import { useToneEngine } from "../hooks/useToneEngine";
 
 export default function FreeflowPage() {
   const [cameraOn, setCameraOn] = useState(true);
+  const [audioReady, setAudioReady] = useState(false);
+
+  const { startAudio, detectHit } = useToneEngine();
+
+  async function enableAudio() {
+    await startAudio();
+    setAudioReady(true);
+  }
 
   return (
     <div style={{
@@ -25,6 +35,25 @@ export default function FreeflowPage() {
         🎶 Freeflow Jam
       </h2>
 
+      {!audioReady && (
+        <button
+          onClick={enableAudio}
+          style={{
+            padding: "0.8rem 1.5rem",
+            borderRadius: "10px",
+            border: "none",
+            fontSize: "1rem",
+            fontWeight: "600",
+            background: "linear-gradient(135deg, #34d399, #38bdf8, #f472b6)",
+            color: "#fff",
+            cursor: "pointer",
+            marginBottom: "1rem",
+          }}
+        >
+          Enable Audio
+        </button>
+      )}
+
       <div style={{
         flex: 1,
         display: "flex",
@@ -35,7 +64,7 @@ export default function FreeflowPage() {
         marginBottom: "1.5rem",
       }}>
         {cameraOn ? (
-          <Camera width="100%" />
+          <Camera width="100%" onPose={detectHit}/>
         ) : (
           <p style={{ color: "#aaa" }}>Camera is off</p>
         )}

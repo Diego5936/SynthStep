@@ -1,13 +1,12 @@
+import { eye } from '@tensorflow/tfjs';
 import { useRef } from 'react';
 import * as Tone from 'tone';
 
 const DBG = false;
 
 export function useToneEngine() {
+    
     // === Hooks declared first (stable order) ===
-    const audioStartedRef = useRef(false);
-    const drumsLoadedRef  = useRef(false);
-    const drumGainRef     = useRef(null);
     const drumSamplerRef  = useRef(null);
     const sensitivityRef  = useRef(0.55); // velocity threshold
 
@@ -35,9 +34,51 @@ export function useToneEngine() {
     }
     const drum = drumSamplerRef.current;
 
-    // === Core control ===
-    const startAudio = async () => {
-        await Tone.start();
+    // STRINGS
+    const stringSamplerRef = useRef(null);
+    if (!stringSamplerRef.current) {
+        stringSamplerRef.current = new Tone.Sampler({
+            urls: {
+                "A2": "Nice_Akai_Strings_A2.wav",
+                "A2m": "Nice_Akai_Strings_A2m.wav",
+                "A#2": "Nice_Akai_Strings_A#2.wav",
+                "A#2m": "Nice_Akai_Strings_A#2m.wav",
+                "B2": "Nice_Akai_Strings_B2.wav",
+                "B2m": "Nice_Akai_Strings_B2m.wav",
+                "C2": "Nice_Akai_Strings_C2.wav",
+                "C2m": "Nice_Akai_Strings_C2m.wav",
+                "C#2": "Nice_Akai_Strings_C#2.wav",
+                "C#2m": "Nice_Akai_Strings_C#2m.wav",
+                "D2": "Nice_Akai_Strings_D2.wav",
+                "D2m": "Nice_Akai_Strings_D2m.wav",
+                "D#2": "Nice_Akai_Strings_D#2.wav",
+                "D#2m": "Nice_Akai_Strings_D#2m.wav",
+                "E2": "Nice_Akai_Strings_E2.wav",
+                "E2m": "Nice_Akai_Strings_E2m.wav",
+                "F2": "Nice_Akai_Strings_F2.wav",
+                "F2m": "Nice_Akai_Strings_F2m.wav",
+                "F#2": "Nice_Akai_Strings_F#2.wav",
+                "F#2m": "Nice_Akai_Strings_F#2m.wav",
+                "G2": "Nice_Akai_Strings_G2.wav",
+                "G2m": "Nice_Akai_Strings_G2m.wav",
+                "G#2": "Nice_Akai_Strings_G#2.wav",
+                "G#2m": "Nice_Akai_Strings_G#2m.wav",
+            },
+            baseUrl: "/samples/strings/",
+            onload: () => {
+                if (DBG) console.log("[Tone] String samples loaded");
+            }
+        }).toDestination();
+    }
+    const strings = stringSamplerRef.current;
+
+    // Ready Flags
+    const audioStartedRef = useRef(false);
+    const drumsLoadedRef  = useRef(false);
+    const stringsLoadedRef = useRef(false);
+
+    const startAudio = async () => { 
+        await Tone.start(); 
         audioStartedRef.current = true;
         if (DBG) console.log("[Tone] AudioContext started");
     };
@@ -54,10 +95,14 @@ export function useToneEngine() {
         return true;
     }
 
-    // === Play helpers ===
-    function playLow()  { if (!ensureReady("playLow")) return; drum.triggerAttackRelease("C1", "8n"); }
-    function playMid()  { if (!ensureReady("playMid")) return; drum.triggerAttackRelease("D1", "8n"); }
-    function playHigh() { if (!ensureReady("playHigh")) return; drum.triggerAttackRelease("E1", "8n"); }
+    // PLAY HELPERS
+    function playLow()   { if (!ensureReady()) return;  drum.triggerAttackRelease("C1", "8n"); }
+    function playMid()   { if (!ensureReady()) return;  drum.triggerAttackRelease("D1", "8n"); }
+    function playHigh()  { if (!ensureReady()) return;  drum.triggerAttackRelease("E1", "8n"); }
+    function playChord(name, dur = "2n") {
+        if (!ensureReady("Strings")) return;
+        strings.triggerAttackRelease(name, dur);
+    }
 
     // === Volume & mute ===
     function setMuted(isMuted) {
@@ -153,8 +198,24 @@ export function useToneEngine() {
 
     function detectHit({ yL, yR, eyeY, shoulderY, midY }) {
         const lines = { eyeY, shoulderY, midY };
+
+        // Drum detection
         if (typeof yR === "number") handleHand(yR, lastR.current, lines);
         if (typeof yL === "number") handleHand(yL, lastL.current, lines);
+
+        // Chord logic
+        if (typeof yL === "number" && typeof yR === "number") {
+            const syncThreshold = 0.15; // how close yL and yR need to be to count as "sync"
+            const diff = Math.abs(yL - yR);
+
+            if (diff < syncThreshold) {
+            // Both arms moving together → major chord
+            playChord("C2"); // later: pick dynamically
+            } else {
+            // Arms apart → minor chord
+            playChord("Am2"); // later: pick dynamically
+            }
+        }
     }
 
     return {
@@ -163,7 +224,7 @@ export function useToneEngine() {
         setVolume,
         setSensitivity,
         connectTo, // ✅ new: lets LoopsPage attach to recordingBus
-        playLow, playMid, playHigh,
+        playLow, playMid, playHigh, playChord,
         detectHit,
         get audioStarted() { return audioStartedRef.current; },
         get drumsLoaded()  { return drumsLoadedRef.current; }
