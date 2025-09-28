@@ -1,153 +1,191 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./LoopsPage.css";
+import Camera from "../components/Camera";
+import * as Tone from "tone";
 
-// 
-// Loops Page
-// - Top left: big camera panel
-// - Right column: view tabs, record/stop/settings, 3 sliders, 2×2 pads, 2 mini channel rows
-// - Bottom: 3 colorful loop lanes spanning full width
-//
-
-const TRACKS_INIT = [
-  { id: "drums",  name: "Drums",  color: "amber",  clips: [] },
-  { id: "lead",   name: "Lead",   color: "sky",    clips: [] },
-  { id: "chords", name: "Chords", color: "emerald", clips: [] },
-];
+const SCALE = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4"];
 
 export default function LoopsPage() {
-  const [view, setView] = useState("view1");
-  const [recording, setRecording] = useState(false);
-  const [loopLen, setLoopLen] = useState(4); // bars
-  const [activeTrackId, setActiveTrackId] = useState("drums");
-  const [tracks, setTracks] = useState(TRACKS_INIT);
+  const [sliders, setSliders] = useState({ a: 50, b: 70, c: 85 }); // pitch, volume, tbd
+  const [pads, setPads] = useState([false, false, false, false]); // active instrument highlight
+  const [activeInstr, setActiveInstr] = useState(null);
+  const [synth, setSynth] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  // right-side control state
-  const [sliders, setSliders] = useState({ a: 70, b: 45, c: 85 });
-  const [pads, setPads] = useState([false, false, false, false]);
-  const [chan, setChan] = useState({ one: { mute: false, val: 60 }, two: { mute: false, val: 40 } });
+  const masterGain = useRef(null);
 
-  const activeTrack = useMemo(() => tracks.find(t => t.id === activeTrackId) || tracks[0], [tracks, activeTrackId]);
+  // setup master gain
+  useEffect(() => {
+    masterGain.current = new Tone.Gain(0.8).toDestination();
+    return () => masterGain.current?.dispose();
+  }, []);
 
-  function toggleRecord() {
-    setRecording(v => !v);
-  }
-  function stopAndCommit() {
-    if (!recording) return;
-    // mock: add a clip of loopLen bars to the active track, appended after existing
-    const start = activeTrack.clips.reduce((acc, c) => acc + c.len, 0) % loopLen; // simple wrap
-    const newClip = { id: Math.random().toString(36).slice(2), start, len: loopLen };
-    setTracks(prev => prev.map(t => t.id === activeTrack.id ? { ...t, clips: [...t.clips, newClip] } : t));
-    setRecording(false);
+  // select instrument (no sound yet)
+  function selectInstrument(idx) {
+    setActiveInstr(idx);
+    setPads((p) => p.map((_, i) => i === idx));
   }
 
-  function clearTrack(id) {
-    setTracks(prev => prev.map(t => t.id === id ? { ...t, clips: [] } : t));
+  // start sound
+  async function startInstrument() {
+    await Tone.start();
+
+    if (synth) {
+      synth.dispose();
+      setSynth(null);
+    }
+    if (activeInstr === null) return;
+
+    let newSynth;
+    switch (activeInstr) {
+      case 0: {
+        const s = new Tone.Synth().connect(masterGain.current);
+        s.triggerAttack("C4");
+        newSynth = s;
+        break;
+      }
+      case 1: {
+        const s = new Tone.FMSynth().connect(masterGain.current);
+        s.triggerAttack("C4");
+        newSynth = s;
+        break;
+      }
+      case 2: {
+        const s = new Tone.MembraneSynth().connect(masterGain.current);
+        s.triggerAttack("C2");
+        newSynth = s;
+        break;
+      }
+      case 3: {
+        const s = new Tone.NoiseSynth().connect(masterGain.current);
+        s.triggerAttack();
+        newSynth = s;
+        break;
+      }
+      default:
+        return;
+    }
+
+    setSynth(newSynth);
+    setIsPlaying(true);
   }
+
+  // stop sound
+  function stopInstrument() {
+    if (synth) {
+      synth.dispose();
+      setSynth(null);
+    }
+    setIsPlaying(false);
+  }
+
+  // pitch control (slider A)
+  useEffect(() => {
+    if (!synth) return;
+    if (activeInstr === 3) {
+      if (!synth.filter) {
+        synth.filter = new Tone.Filter(800, "bandpass").toDestination();
+        synth.disconnect();
+        synth.connect(synth.filter);
+      }
+      const freq = 200 + (sliders.a / 100) * 2000;
+      synth.filter.frequency.rampTo(freq, 0.05);
+    } else {
+      const noteIndex = Math.round((sliders.a / 100) * (SCALE.length - 1));
+      const note = SCALE[noteIndex];
+      synth.setNote?.(note);
+    }
+  }, [sliders.a, synth, activeInstr]);
+
+  // volume control (slider B)
+  useEffect(() => {
+    if (!synth) return;
+    const gain = Math.max(0.001, sliders.b / 100);
+    synth.volume.rampTo(Tone.gainToDb(gain), 0.05);
+  }, [sliders.b, synth]);
 
   return (
     <div className="loops2">
-      {/* TOP GRID */}
       <div className="top">
-        {/* Camera panel */}
+        {/* Camera + Start/Stop */}
         <div className="camera2">
           <div className="camera2__bg" />
           <div className="camera2__center">
-            <div className="camera2__placeholder">Camera Feed / Pose Overlay</div>
+            <Camera width={640} height={360} mirrored onPose={() => {}} />
           </div>
           <div className="camera2__foot">
-            <div className="footbtn" />
-            <div className="footbtn" />
-            <div className="footbtn" />
+            <button
+              className="btn"
+              onClick={startInstrument}
+              disabled={isPlaying || activeInstr === null}
+            >
+              ▶ Start
+            </button>
+            <button
+              className="btn btn--stop"
+              onClick={stopInstrument}
+              disabled={!isPlaying}
+            >
+              ⏹ Stop
+            </button>
           </div>
         </div>
 
-        {/* Right controls column */}
+        {/* Controls */}
         <div className="side">
-          <div className="side__topbar">
-            <div className="seg">
-              <button className={view === "view1" ? "seg__btn seg__btn--on" : "seg__btn"} onClick={() => setView("view1")}>view 1</button>
-              <button className={view === "view2" ? "seg__btn seg__btn--on" : "seg__btn"} onClick={() => setView("view2")}>view 2</button>
-            </div>
-            <div className="btnrow">
-              <button className={recording ? "btn btn--rec on" : "btn btn--rec"} onClick={toggleRecord}>rec</button>
-              <button className="btn" onClick={stopAndCommit}>stop</button>
-              <button className="btn">settings</button>
-            </div>
-          </div>
-
-          {/* 3 horizontal sliders */}
+          {/* Sliders */}
           <div className="faders">
-            {(["a","b","c"]).map((k, i) => (
-              <div className="fader" key={k}>
-                <input type="range" min="0" max="100" value={sliders[k]} onChange={e => setSliders(s => ({...s, [k]: parseInt(e.target.value)}))} />
-              </div>
-            ))}
+            <div className="fader">
+              <span>Pitch</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliders.a}
+                onChange={(e) =>
+                  setSliders((s) => ({ ...s, a: parseInt(e.target.value, 10) }))
+                }
+              />
+            </div>
+            <div className="fader">
+              <span>Volume</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliders.b}
+                onChange={(e) =>
+                  setSliders((s) => ({ ...s, b: parseInt(e.target.value, 10) }))
+                }
+              />
+            </div>
+            <div className="fader">
+              <span>TBD</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliders.c}
+                onChange={(e) =>
+                  setSliders((s) => ({ ...s, c: parseInt(e.target.value, 10) }))
+                }
+              />
+            </div>
           </div>
 
-          {/* 2×2 pads */}
+          {/* Instrument selector pads */}
           <div className="pads">
-            {pads.map((on, idx) => (
-              <button key={idx} className={on ? "pad pad--on" : "pad"} onMouseDown={() => setPads(p => p.map((v,i)=>i===idx?true:v))} onMouseUp={() => setPads(p => p.map((v,i)=>i===idx?false:v))} />
+            {["Synth", "FM", "Drum", "Noise"].map((label, idx) => (
+              <button
+                key={idx}
+                className={pads[idx] ? "pad pad--on" : "pad"}
+                onClick={() => selectInstrument(idx)}
+              >
+                {label}
+              </button>
             ))}
           </div>
-
-          {/* two mini channels */}
-          <div className="channels">
-            {["one","two"].map((key) => (
-              <div key={key} className="chan">
-                <button className={chan[key].mute ? "square square--on" : "square"} onClick={() => setChan(c => ({...c, [key]: {...c[key], mute: !c[key].mute}}))} />
-                <input className="chan__slider" type="range" min="0" max="100" value={chan[key].val} onChange={e => setChan(c => ({...c, [key]: {...c[key], val: parseInt(e.target.value)}}))} />
-              </div>
-            ))}
-          </div>
-
-          {/* active track select + loop len */}
-          <div className="side__meta">
-            <label>
-              track
-              <select value={activeTrackId} onChange={e => setActiveTrackId(e.target.value)}>
-                {tracks.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </label>
-            <label>
-              bars
-              <select value={loopLen} onChange={e => setLoopLen(parseInt(e.target.value))}>
-                {[2,4,8].map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </label>
-          </div>
         </div>
-      </div>
-
-      {/* BOTTOM: loop lanes */}
-      <div className="lanes2">
-        {tracks.map((t) => (
-          <Lane key={t.id} track={t} loopLen={loopLen} onClear={() => clearTrack(t.id)} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Lane({ track, loopLen, onClear }) {
-  // width math: each lane visual spans 100% = loopLen bars
-  return (
-    <div className={`lane2 lane2--${track.color}`}>
-      <div className="lane2__head">
-        <div className="lane2__name">{track.name}</div>
-        <div className="lane2__actions">
-          <button className="btn btn--ghost" onClick={onClear}>clear</button>
-        </div>
-      </div>
-      <div className="lane2__timeline">
-        {/* grid ticks */}
-        {Array.from({ length: loopLen + 1 }).map((_, i) => (
-          <div key={i} className="tick" style={{ left: `${(i/loopLen)*100}%` }} />
-        ))}
-        {/* clips */}
-        {track.clips.map((c) => (
-          <div key={c.id} className="clip2" style={{ left: `${(c.start/loopLen)*100}%`, width: `${(c.len/loopLen)*100}%` }} />
-        ))}
       </div>
     </div>
   );

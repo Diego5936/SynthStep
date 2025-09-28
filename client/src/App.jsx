@@ -1,19 +1,17 @@
-import { useState } from 'react';
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import * as Tone from 'tone';
+import { useState } from "react";
+import React from "react";
+import { Routes, Route, Link } from "react-router-dom";
+import * as Tone from "tone";
 
-import './App.css';
+import "./App.css";
 
 import LoopsPage from "./pages/LoopsPage.jsx";
-import SoundButton from './components/SoundButton';
-import SoundControl from './components/SoundControl';
-import Camera from './components/Camera';
+import FreeflowPage from "./pages/FreeflowPage.jsx";
+import SynthKeyboard from "./components/SynthKeyboard";
 
 function SynthStep() {
-  const [settings, setSettings] = useState({ note: "C4", duration: "8n" });
-  const [cameraOn, setCameraOn] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
+  const [instrument, setInstrument] = useState("synth");
 
   const enableAudio = async () => {
     await Tone.start();
@@ -22,34 +20,25 @@ function SynthStep() {
   };
 
   return (
-    <div>
+    <div className="home">
       <h1>SynthStep</h1>
+      <p className="tagline">
+        the recording studio where <strong>YOU</strong> are the music
+      </p>
+
 
       {!audioReady && (
-        <p style={{ marginBottom: 12 }}>
+        <p>
           <button onClick={enableAudio}>Enable Audio</button>
         </p>
       )}
 
-      <SoundControl onChange={setSettings} />
+      <SynthKeyboard instrument={instrument} />
 
-      <div>
-        <SoundButton label="Drum"  instrument="drum"  {...settings}/>
-        <SoundButton label="Synth" instrument="synth" {...settings}/>
-        <SoundButton label="FM"    instrument="fm"    {...settings}/>
-        <SoundButton label="Noise" instrument="noise" {...settings}/>
+      <div className="nav-buttons">
+        <Link to="/loopspage" className="nav-tile">🎛 Loopstation</Link>
+        <Link to="/freeflow" className="nav-tile">🎶 Freeflow Jam</Link>
       </div>
-
-      <p style={{ marginTop: 12 }}>
-        <Link to="/loopspage">Go to Loops Page →</Link>
-      </p>
-
-      {/* Camera */}
-      <button onClick={() => setCameraOn((prev) => !prev)}>
-        {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
-      </button>
-
-      {cameraOn && <Camera />}
     </div>
   );
 }
@@ -59,6 +48,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<SynthStep />} />
       <Route path="/loopspage" element={<LoopsPage />} />
+      <Route path="/freeflow" element={<FreeflowPage />} />
       <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
     </Routes>
   );
