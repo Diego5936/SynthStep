@@ -10,8 +10,8 @@ function App() {
   const engine = useToneEngine();
   const { 
     startAudio,
-    playCymbal, playDrum, playHihatOpen, playHihatQuick, playSnare, 
-    detectDrumHit, 
+    playLow, playMid, playHigh,
+    detectHit,
   } = engine;
 
   const [cameraOn, setCameraOn] = useState(false);
@@ -28,11 +28,9 @@ function App() {
 
       {/* Sound Test */}
       <div>
-        <SoundButton label="Cymbal" onClick={playCymbal} />
-        <SoundButton label="Drum" onClick={playDrum} />
-        <SoundButton label="Hihat Open" onClick={playHihatOpen} />
-        <SoundButton label="Hihat Quick" onClick={playHihatQuick} />
-        <SoundButton label="Snare" onClick={playSnare} />
+        <SoundButton label="Low (Tambor)" onClick={playLow} />
+        <SoundButton label="Mid (Snare)" onClick={playMid} />
+        <SoundButton label="High (Hi-hat)" onClick={playHigh} />
       </div>
 
       {/* Camera */}
@@ -40,18 +38,12 @@ function App() {
         {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
       </button>
 
-      <p style={{fontFamily:"monospace"}}>
-        audioStarted: {String(engine.audioStarted)} | drumsLoaded: {String(engine.drumsLoaded)}<br/>
-        yL: {lastYL?.toFixed?.(3) ?? "-"} | yR: {lastYR?.toFixed?.(3) ?? "-"}
-      </p>
-
       {cameraOn && (
         <Camera 
-          onPose={({ yL, yR }) => {
-            console.log(`[pose->App] yL=${yL?.toFixed?.(3)} yR=${yR?.toFixed?.(3)}`);
+          onPose={({ yL, yR, eyeY, shoulderY, midY }) => {
             setLastYL(yL); 
             setLastYR(yR);
-            detectDrumHit({ yL, yR });
+            detectHit({ yL, yR , eyeY, shoulderY, midY});
           }}
         />
       )}
