@@ -5,27 +5,38 @@ import * as Tone from "tone";
 
 import "./App.css";
 
+//Pages
 import LoopsPage from "./pages/LoopsPage.jsx";
 import FreeflowPage from "./pages/FreeflowPage.jsx";
+
+// Hooks
+import { useToneEngine } from './hooks/useToneEngine.js';
+
+// Components
+import SoundButton from './components/SoundButton';
+import Camera from './components/Camera';
 import SynthKeyboard from "./components/SynthKeyboard";
+
 
 function SynthStep() {
   const [audioReady, setAudioReady] = useState(false);
   const [instrument, setInstrument] = useState("synth");
-
-  const enableAudio = async () => {
-    await Tone.start();
-    setAudioReady(true);
-    console.log("Audio ready");
-  };
-
+  const [cameraOn, setCameraOn] = useState(false);
+  const [lastYL, setLastYL] = useState(null);
+  const [lastYR, setLastYR] = useState(null);
+  const engine = useToneEngine();
+  const { 
+    startAudio,
+    playLow, playMid, playHigh,
+    detectHit,
+  } = engine;
+  
   return (
     <div className="home">
       <h1>SynthStep</h1>
       <p className="tagline">
         the recording studio where <strong>YOU</strong> are the music
       </p>
-
 
       {!audioReady && (
         <p>
