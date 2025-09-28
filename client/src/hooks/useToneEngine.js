@@ -1,3 +1,4 @@
+import { eye } from '@tensorflow/tfjs';
 import { useRef } from 'react';
 import * as Tone from 'tone';
 
@@ -101,44 +102,57 @@ export function useToneEngine() {
             playHigh();
     }
 
-  function handleHand(y, state) {
-    const now = performance.now();
-
-    // Guard
-    if (y > 1) 
-        y = clamp(y);
-
-    // Velocity for gesture strength
-    if (state.y !== null) {
-        const dt = Math.max(1, now - state.t);
-        const dy = Math.abs(y - state.y);
-        const vel = (dy / dt) * 1000;
-
-        // Next zone
-        const nextZone = zoneFromYWithHyst(y, state.lastZone);
-
-        // Fire on zone transition w enough velocity
-        const zoneChanged = state.lastZone && nextZone !== state.lastZone;
-        const canFire = zoneChanged & vel > velocityThreshold && (now - state.lastTrig) > refractoryMS;
-
-        if (canFire && ensureReady()) {
-            triggerZone(nextZone);
-            state.lastTrig = now;
+    function handleHand(y, state, lines) {
+        const { eyeY, shoulderY, midY } = lines || {};
+        if (eyeY == null || shoulderY == null || midY == null) {
+            state.y = y;
+            state.t = performance.now();
+            return;
         }
-        state.lastZone = nextZone;
-    }
-    else {
-        state.lastZone = zoneFromYBasic(y);
+
+        const now = performance.now();
+        const prevY = state.y;
+        if (y > 1)
+            y = clamp(y);
+        if (prevY != null) {
+            const dt = Math.max(1, now - state.t);
+            const dy = y - prevY; // signed, positive = down
+            const vel = (Math.abs(dy) / dt) * 1000;
+
+            const fastEnough = vel > velocityThreshold;
+
+            let fired = false;
+
+            // High
+            if (!fired && fastEnough && prevY > eyeY && y <= eyeY) {
+                playHigh();
+                state.lastTrig = now;
+                fired = true;
+            }
+
+            // Mid
+            if (!fired && fastEnough && prevY < shoulderY && y >= shoulderY) {
+                playMid();
+                state.lastTrig = now;
+                fired = true;
+            }
+
+            // Low
+            if (!fired && fastEnough && prevY < midY && y >= midY) {
+                playLow();
+                state.lastTrig = now;
+                fired = true;
+            }
+        }
+
+        state.y = y;
+        state.t = now;
     }
 
-    state.y = y;
-    state.t = now;
-    }
-
-    function detectHit({ yL, yR }) {
-        // Either/both hands can trigger. Call both detectors each frame.
-        if (typeof yR === "number") handleHand(yR, lastR.current);
-        if (typeof yL === "number") handleHand(yL, lastL.current);
+    function detectHit({ yL, yR, eyeY, shoulderY, midY }) {
+        const lines = { eyeY, shoulderY, midY };
+        if (typeof yR === "number") handleHand(yR, lastR.current, lines);
+        if (typeof yL === "number") handleHand(yL, lastL.current, lines);
     }
 
     return { 
