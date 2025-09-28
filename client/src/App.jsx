@@ -11,33 +11,30 @@ import SoundControl from './components/SoundControl';
 import Camera from './components/Camera';
 
 function SynthStep() {
-  const [settings, setSettings] = useState({ note: "C4", duration: "8n" });
+  const engine = useToneEngine();
+  const { 
+    startAudio,
+    playLow, playMid, playHigh,
+    detectHit,
+  } = engine;
+
   const [cameraOn, setCameraOn] = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
 
-  const enableAudio = async () => {
-    await Tone.start();
-    setAudioReady(true);
-    console.log("Audio ready");
-  };
-
+  const [lastYL, setLastYL] = useState(null);
+  const [lastYR, setLastYR] = useState(null);
+  
   return (
-    <div>
+    <div className="App">
       <h1>SynthStep</h1>
 
-      {!audioReady && (
-        <p style={{ marginBottom: 12 }}>
-          <button onClick={enableAudio}>Enable Audio</button>
-        </p>
-      )}
+      {/* Required by browsers to unlock audio */}
+      <button onClick={startAudio}>Start Audio</button>
 
-      <SoundControl onChange={setSettings} />
-
+      {/* Sound Test */}
       <div>
-        <SoundButton label="Drum"  instrument="drum"  {...settings}/>
-        <SoundButton label="Synth" instrument="synth" {...settings}/>
-        <SoundButton label="FM"    instrument="fm"    {...settings}/>
-        <SoundButton label="Noise" instrument="noise" {...settings}/>
+        <SoundButton label="Low (Tambor)" onClick={playLow} />
+        <SoundButton label="Mid (Snare)" onClick={playMid} />
+        <SoundButton label="High (Hi-hat)" onClick={playHigh} />
       </div>
 
       <p style={{ marginTop: 12 }}>
@@ -49,7 +46,15 @@ function SynthStep() {
         {cameraOn ? "Turn Camera Off" : "Turn Camera On"}
       </button>
 
-      {cameraOn && <Camera />}
+      {cameraOn && (
+        <Camera 
+          onPose={({ yL, yR, eyeY, shoulderY, midY }) => {
+            setLastYL(yL); 
+            setLastYR(yR);
+            detectHit({ yL, yR , eyeY, shoulderY, midY});
+          }}
+        />
+      )}
     </div>
   );
 }
