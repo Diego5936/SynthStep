@@ -5,10 +5,12 @@ import * as Tone from 'tone';
 const DBG = false;
 
 export function useToneEngine() {
-    
+
     // === Hooks declared first (stable order) ===
     const drumSamplerRef  = useRef(null);
     const sensitivityRef  = useRef(0.55); // velocity threshold
+    const drumGainRef     = useRef(null);
+
 
     // === Gain for mute/volume ===
     if (!drumGainRef.current) {
