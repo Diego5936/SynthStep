@@ -1,21 +1,73 @@
-# SynthStep
-Inspiration
-We were inspired by the idea of making music more playful and accessible. Instead of needing an instrument or controller, we wanted people to be able to step in front of a camera and create sounds with simple movements. The goal was to capture the fun of experimenting with music in a way that feels natural and intuitive.
+# 🎶 SynthStep
 
-What it does
-SynthStep is an interactive loop station that turns hand and body movement into sound. Users can select instruments, adjust pitch and volume with sliders, and start or stop playback. The camera detects movement and translates it into beats and melodies, letting anyone “play” music just by moving. It also has a freeflow state that removes all the sliders and buttons and allows the user to "flow" and make music.
+> “Don’t dance to the music — *make the music dance to you.*”
 
-How we built it
-We built SynthStep using React for the interface and Tone.js for real-time sound synthesis. The camera feed connects to motion tracking, which we mapped to different instruments and sound controls. We designed a clean UI with start/stop buttons, instrument pads, and sliders to make the experience simple and responsive.
+---
 
-Challenges we ran into
-One of the hardest parts was getting movement detection and sound timing to sync up so that the music felt responsive. We also ran into roadblocks with audio recording and looping features and we weren’t able to fully figure those out in time for the demo.
+## 🌟 Inspiration
+For our **ShellHacks 2025** project, we were inspired by the idea of learning and making music in a more **interactive and playful** way.  
+Instead of dancing *to* music, we wanted to **reverse the roles**, letting music be **created as you dance**.  
+Our goal was to capture the fun of experimentation and make music feel natural, intuitive, and expressive.
 
-Accomplishments that we're proud of
-We’re proud of creating a working prototype that lets people make music with movement. The visual design of the interface, the real-time sound controls, and the ability to play different instruments without touching anything are all milestones that we were excited to bring together.
+---
 
-What we learned
-We learned a lot about real-time sound synthesis, gesture mapping, and building interactive experiences that feel natural to use. We also learned how important timing and responsiveness are in music based projects, and how tricky browser audio can be when it comes to stability and recording.
+## 🎧 What It Does
+**SynthStep** is an interactive **loop station** that turns **hand and body movements** into music.  
 
-What's next for SynthStep
-Next, we’d like to finish the looping and recording features so users can layer sounds and build full tracks. We also want to refine the motion detection to make it smoother and add more instruments and effects. Another goal is to have the Freeflow page be completely hands free and allow users to create music that follows not just their gestures, but their dance moves! In the future, this could scale up to be a game or tool for everyone to enjoy.
+🎵 **Features**
+- Real-time **motion-to-sound** mapping using your camera  
+- Play multiple instruments: drums, synths, and strings  
+- Adjust **pitch** and **volume** with sliders  
+- A **Freeflow mode** for a completely hands-free creative experience to just *flow*
+
+![UI Placeholder](./assets/interface.png)
+
+---
+
+## 🛠️ How We Built It
+We built SynthStep with a combination of **web technologies** and **machine learning tools**:
+
+- **React + Vite** → Frontend interface and UI components  
+- **Tone.js** → Real-time sound synthesis and looping  
+- **TensorFlow PoseDetection** → Camera-based body tracking  
+
+We mapped detected movement to sound settings like instrument type, pitch, and rhythm. Transforming simple gestures into live musical performances.
+
+---
+
+## 🧩 Challenges We Faced
+- Getting **movement detection** and **sound timing** to sync naturally for an intuitive feel
+- Implementing **audio recording and loop layering** in the browser  
+- Learning **music theory concepts** on the fly, which was ambitious for a 36-hour hackathon!  
+
+---
+
+## 🏆 Accomplishments
+- Created a **working prototype** that lets users make music with movement  
+- Designed a clean, reactive **UI** for quick interaction  
+- Integrated **real-time sound** and **camera-based tracking** for intuitive play  
+- Showcased a **hands-free Freeflow mode** where users can “dance to create”
+
+---
+
+## 📚 What We Learned
+- Real-time **sound synthesis** and **gesture mapping**  
+- Importance of **timing and latency** in interactive music projects  
+- Balancing **creativity with technical complexity** under hackathon pressure  
+
+---
+
+## 🚀 What’s Next
+- Finalize **looping and recording** features to layer full songs  
+- **Refine motion tracking** using a **hand tracker** to interpret signals and gestures, not just wrist movements  
+- Add **more instruments and effects** for more creative control  
+- Expand **Freeflow mode** to interpret entire **dance sequences**  
+- Evolve SynthStep into an **interactive music game** or creative tool for everyone 🎮🎵
+
+---
+
+## 👥 Team
+Built with ❤️ at **ShellHacks 2025** by  
+**Diego Pedroza** and **Rebecca Osorio**
+
+---
