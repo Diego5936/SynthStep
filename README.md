@@ -9,6 +9,8 @@ For our **ShellHacks 2025** project, we were inspired by the idea of learning an
 Instead of dancing *to* music, we wanted to **reverse the roles**, letting music be **created as you dance**.  
 Our goal was to capture the fun of experimentation and make music feel natural, intuitive, and expressive.
 
+![UI](./assets/interface.png)
+
 ---
 
 ## 🎧 What It Does
@@ -20,7 +22,9 @@ Our goal was to capture the fun of experimentation and make music feel natural, 
 - Adjust **pitch** and **volume** with sliders  
 - A **Freeflow mode** for a completely hands-free creative experience to just *flow*
 
-![UI Placeholder](./assets/interface.png)
+|Loopstation Mode|Freeflow Mode|
+|---|---|
+|![](./assets/loopstation-vid.gif)|![](./assets/freeflow-jam-vid.gif)
 
 ---
 
